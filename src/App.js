@@ -19,12 +19,41 @@ import {
 import {
   Send as SendIcon,
   Refresh as RefreshIcon,
-  SmartToy as AIIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  KeyboardArrowDown as ArrowDownIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import config from './config';
 import './App.css';
+import qurenoteLogo from './assets/qurenote.svg';
+
+// Custom Qurenote Logo Component
+const QurenoteLogo = ({ sx = {}, context = 'default' }) => {
+  const getClassName = () => {
+    switch (context) {
+      case 'header':
+        return 'qurenote-logo-header';
+      case 'message':
+        return 'qurenote-logo-message';
+      default:
+        return 'qurenote-logo';
+    }
+  };
+
+  return (
+    <Box
+      component="img"
+      src={qurenoteLogo}
+      alt="Qurenote Logo"
+      className={getClassName()}
+      sx={{
+        width: 24,
+        height: 24,
+        ...sx
+      }}
+    />
+  );
+};
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -32,7 +61,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState('');
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Generate session ID on component mount
   useEffect(() => {
@@ -40,10 +71,41 @@ function App() {
     setSessionId(newSessionId);
   }, []);
 
+  // Handle scroll position to show/hide scroll button
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    }
+  };
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  };
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: config.AUTO_SCROLL_BEHAVIOR });
-  }, [messages]);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: config.AUTO_SCROLL_BEHAVIOR,
+        block: 'end'
+      });
+    }
+  }, [messages, isLoading]);
+
+  // Scroll to bottom on initial load
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, []);
 
   const getErrorMessage = (error) => {
     if (error.response?.status === 429) {
@@ -130,16 +192,11 @@ function App() {
       {/* Header */}
       <AppBar position="static" elevation={1}>
         <Toolbar>
-          <AIIcon sx={{ mr: 2 }} />
+          <QurenoteLogo sx={{ mr: 2 }} context="header" />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            AI Chat Assistant
+            Urgent Care of Kansas
           </Typography>
-          <Chip 
-            label={`Session: ${sessionId.substring(0, 8)}...`} 
-            size="small" 
-            variant="outlined" 
-            sx={{ color: 'white', borderColor: 'white' }}
-          />
+          
           <IconButton 
             color="inherit" 
             onClick={clearChat}
@@ -163,12 +220,38 @@ function App() {
           }}
         >
           {/* Messages Area */}
-          <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          <Box 
+            ref={messagesContainerRef}
+            className="messages-container"
+            sx={{ 
+              flexGrow: 1, 
+              overflow: 'auto', 
+              p: 2,
+              maxHeight: 'calc(100vh - 200px)',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#c1c1c1',
+                borderRadius: '4px',
+                '&:hover': {
+                  background: '#a8a8a8',
+                },
+              },
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#c1c1c1 #f1f1f1',
+            }}
+            onScroll={handleScroll}
+          >
             {messages.length === 0 && (
               <Box sx={{ textAlign: 'center', py: 4 }}>
-                <AIIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <QurenoteLogo sx={{ fontSize: 64, width: 64, height: 64, mb: 2 }} context="default" />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Welcome to AI Chat Assistant
+                  Welcome to Urgent Care of Kansas AI Assistant.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Start a conversation by typing a message below
@@ -176,7 +259,7 @@ function App() {
               </Box>
             )}
 
-            <List sx={{ p: 0 }}>
+            <List sx={{ p: 0, minHeight: '100%' }}>
               {messages.map((message) => (
                 <ListItem
                   key={message.id}
@@ -196,7 +279,7 @@ function App() {
                     }}
                   >
                     {message.sender === 'ai' && (
-                      <AIIcon sx={{ color: 'primary.main', mt: 0.5 }} />
+                      <QurenoteLogo sx={{ mt: 0.5 }} />
                     )}
                     <Paper
                       elevation={1}
@@ -205,10 +288,11 @@ function App() {
                         backgroundColor: message.sender === 'user' ? 'primary.main' : 'grey.100',
                         color: message.sender === 'user' ? 'white' : 'text.primary',
                         borderRadius: 2,
-                        wordBreak: 'break-word'
+                        wordBreak: 'break-word',
+                        maxWidth: '100%'
                       }}
                     >
-                      <Typography variant="body1">
+                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                         {message.content}
                       </Typography>
                       <Typography 
@@ -242,7 +326,35 @@ function App() {
               </Alert>
             )}
 
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} style={{ height: '1px' }} />
+            
+            {/* Scroll to bottom button */}
+            {showScrollButton && messages.length > 0 && (
+              <Box
+                className="scroll-button"
+                sx={{
+                  position: 'absolute',
+                  bottom: 20,
+                  right: 20,
+                  zIndex: 1000,
+                }}
+              >
+                <IconButton
+                  onClick={scrollToBottom}
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    boxShadow: 3,
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                  }}
+                  size="small"
+                >
+                  <ArrowDownIcon />
+                </IconButton>
+              </Box>
+            )}
           </Box>
 
           <Divider />

@@ -49,21 +49,69 @@ body {
 
 /* Custom scrollbar for messages */
 .MuiBox-root::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .MuiBox-root::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .MuiBox-root::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 3px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
 .MuiBox-root::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Firefox scrollbar */
+.MuiBox-root {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* Scroll to bottom button animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scroll-button {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Enhanced message container scrolling */
+.messages-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* For iOS smooth scrolling */
+  position: relative; /* For absolute positioning of scroll button */
+}
+
+/* Ensure proper height for embedded iframes */
+@media (max-height: 600px) {
+  .messages-container {
+    max-height: calc(100vh - 150px) !important;
+  }
+}
+
+/* Mobile responsive scrolling */
+@media (max-width: 768px) {
+  .MuiBox-root::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .messages-container {
+    max-height: calc(100vh - 180px) !important;
+  }
 }
 
 /* Smooth transitions */
@@ -118,4 +166,18 @@ body {
   .MuiPaper-root {
     margin: 0 !important;
   }
+}
+
+/* Qurenote Logo styling */
+.qurenote-logo {
+  filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+}
+
+/* Ensure logo displays properly in different contexts */
+.qurenote-logo-header {
+  filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+}
+
+.qurenote-logo-message {
+  filter: none; /* Keep original colors for messages */
 }
