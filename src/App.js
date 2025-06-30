@@ -55,6 +55,28 @@ const QurenoteLogo = ({ sx = {}, context = 'default' }) => {
   );
 };
 
+// Custom Typing Indicator Component
+const TypingIndicator = () => {
+  const [dots, setDots] = useState('');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => {
+        if (prev === '...') return '';
+        return prev + '.';
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Typography variant="body2" color="text.secondary">
+      Typing{dots}
+    </Typography>
+  );
+};
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -71,18 +93,27 @@ function App() {
     setSessionId(newSessionId);
   }, []);
 
+  // Ensure messages container starts at top on initial load
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+  }, []);
+
   // Handle scroll position to show/hide scroll button
   const handleScroll = () => {
-    if (messagesContainerRef.current) {
+    if (messagesContainerRef.current && messages.length > 0) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       setShowScrollButton(!isNearBottom);
+    } else {
+      setShowScrollButton(false);
     }
   };
 
   // Scroll to bottom function
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && messages.length > 0) {
       messagesEndRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'end'
@@ -92,20 +123,13 @@ function App() {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && messages.length > 0) {
       messagesEndRef.current.scrollIntoView({ 
         behavior: config.AUTO_SCROLL_BEHAVIOR,
         block: 'end'
       });
     }
   }, [messages, isLoading]);
-
-  // Scroll to bottom on initial load
-  useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  }, []);
 
   const getErrorMessage = (error) => {
     if (error.response?.status === 429) {
@@ -222,7 +246,7 @@ function App() {
           {/* Messages Area */}
           <Box 
             ref={messagesContainerRef}
-            className="messages-container"
+            className={`messages-container ${messages.length > 0 ? 'has-messages' : ''}`}
             sx={{ 
               flexGrow: 1, 
               overflow: 'auto', 
@@ -248,7 +272,7 @@ function App() {
             onScroll={handleScroll}
           >
             {messages.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Box sx={{ textAlign: 'center', py: 4, minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <QurenoteLogo sx={{ fontSize: 64, width: 64, height: 64, mb: 2 }} context="default" />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   Welcome to Urgent Care of Kansas AI Assistant.
@@ -263,6 +287,7 @@ function App() {
               {messages.map((message) => (
                 <ListItem
                   key={message.id}
+                  className="message-enter"
                   sx={{
                     flexDirection: 'column',
                     alignItems: message.sender === 'user' ? 'flex-end' : 'flex-start',
@@ -279,7 +304,7 @@ function App() {
                     }}
                   >
                     {message.sender === 'ai' && (
-                      <QurenoteLogo sx={{ mt: 0.5 }} />
+                      <QurenoteLogo sx={{ mt: 0.5 }} context="message" />
                     )}
                     <Paper
                       elevation={1}
@@ -312,13 +337,47 @@ function App() {
                   </Box>
                 </ListItem>
               ))}
+              
+              {/* Loading indicator as a message bubble */}
+              {isLoading && (
+                <ListItem
+                  className="message-enter"
+                  sx={{
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    px: 0,
+                    py: 1
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      maxWidth: '70%',
+                      gap: 1
+                    }}
+                  >
+                    <QurenoteLogo sx={{ mt: 0.5 }} context="message" />
+                    <Paper
+                      elevation={1}
+                      className="typing-indicator"
+                      sx={{
+                        p: 2,
+                        backgroundColor: 'grey.100',
+                        borderRadius: 2,
+                        minWidth: 80,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <CircularProgress size={16} />
+                      <TypingIndicator />
+                    </Paper>
+                  </Box>
+                </ListItem>
+              )}
             </List>
-
-            {isLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
-            )}
 
             {error && (
               <Alert severity="error" sx={{ mt: 2 }}>
