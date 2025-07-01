@@ -170,7 +170,7 @@ function App() {
 
       const aiMessage = {
         id: Date.now() + 1,
-        content: response.data.reply,
+        content: response.data.response,
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
